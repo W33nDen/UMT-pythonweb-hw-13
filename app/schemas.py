@@ -37,6 +37,11 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=6, examples=["secretpassword"])
 
 
+class UserLogin(BaseModel):
+    email: EmailStr = Field(examples=["user@example.com"])
+    password: str = Field(examples=["secretpassword"])
+
+
 class UserResponse(BaseModel):
     id: int
     email: EmailStr

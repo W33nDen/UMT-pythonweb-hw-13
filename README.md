@@ -1,109 +1,127 @@
-# UMT-pythonweb-hw-08
+# UMT-pythonweb-hw-11 — Contacts REST API
 
-REST API для зберігання та управління контактами на FastAPI, SQLAlchemy і PostgreSQL.
+Розширений REST API застосунок на FastAPI для зберігання та управління контактами з підтримкою аутентифікації, авторизації за допомогою JWT-токенів, верифікації email, rate-limiting, CORS та інтеграції з Cloudinary для оновлення аватарів.
 
-## Можливості
+---
 
-- створення нового контакту;
-- отримання списку контактів;
-- отримання одного контакту за `id`;
-- оновлення контакту;
-- видалення контакту;
-- пошук за іменем, прізвищем або email через query-параметри;
-- список контактів з днями народження у найближчі 7 днів;
-- Swagger/OpenAPI документація.
+## 🚀 Нові можливості (ДЗ №11)
 
-## Стек
+1. **Аутентифікація та реєстрація користувачів**:
+   - Реєстрація нових користувачів (`POST /auth/signup`) з поверненням статусу `201 Created`.
+   - Перевірка унікальності email (повертає `409 Conflict`, якщо користувач вже існує).
+   - Надійне хешування паролів за допомогою бібліотеки `bcrypt` (без прямого збереження відкритих паролів у базі).
+   - Окремі, архітектурно розділені Pydantic-схеми для реєстрації (`UserCreate`) та входу (`UserLogin`).
 
-- FastAPI
-- SQLAlchemy
-- PostgreSQL
-- Pydantic
-- Uvicorn
+2. **Авторизація через JWT (Access Token)**:
+   - Генерація безпечних JWT токенів при вході (`POST /auth/login` та сумісний з OpenAPI `/auth/token`).
+   - Захист усіх операцій з контактами: доступ дозволено виключно зареєстрованим та авторизованим користувачам за допомогою Bearer токена.
+   - **Повне розмежування доступу**: кожен користувач має доступ тільки до своїх власних контактів (створення, читання, оновлення, видалення, пошук та дні народження).
 
-## Запуск
+3. **Верифікація електронної пошти**:
+   - Надсилання листів з унікальним JWT-токеном верифікації при реєстрації.
+   - Ендпоінт `GET /auth/verify/{token}` для активації та підтвердження облікового запису.
+   - **Гнучкий fallback-режим**: якщо в `.env` не вказані реальні SMTP-налаштування (або залишено дефолтні), застосунок не падає, а безпечно виводить посилання верифікації безпосередньо у вікно консолі сервера для полегшення розробки та тестування.
 
-1. Створіть та активуйте віртуальне оточення:
+4. **Обмеження кількості запитів (Rate Limiting)**:
+   - Обмежено кількість запитів до маршруту користувача `/users/me` до `10 запитів на хвилину` за допомогою `slowapi`. При перевищенні ліміту повертається HTTP-статус `429 Too Many Requests`.
 
+5. **Завантаження аватарів (Cloudinary)**:
+   - Можливість оновлення аватара користувача (`PATCH /users/avatar`) через multipart/form-data завантаження файлів.
+   - Інтеграція з хмарним сервісом **Cloudinary** для надійного збереження зображень.
+   - Автоматичний fallback на Gravatar, якщо облікові дані Cloudinary не налаштовані в `.env`.
+
+6. **CORS (Cross-Origin Resource Sharing)**:
+   - Повністю активовано CORS middleware для забезпечення безперешкодної взаємодії з будь-якими фронтенд-клієнтами.
+
+7. **Повна оркестрація через Docker Compose**:
+   - Створено оптимізований `Dockerfile`.
+   - Оновлено `docker-compose.yml` для запуску **всього** стеку сервісів (база даних PostgreSQL + FastAPI веб-додаток) однією командою.
+
+---
+
+## 🛠️ Технологічний стек
+
+*   **Фреймворк**: FastAPI
+*   **База даних**: PostgreSQL (SQLAlchemy ORM)
+*   **Аутентифікація**: PyJWT / Python-Jose, Bcrypt
+*   **Rate Limiting**: SlowAPI (Limits)
+*   **Хмара (Аватари)**: Cloudinary API
+*   **Надсилання пошти**: FastAPI-Mail (aiosmtplib)
+*   **Оркестрація**: Docker / Docker Compose
+
+---
+
+## 💻 Швидкий запуск
+
+### Варіант 1: Запуск через Docker Compose (Рекомендовано)
+
+Запуск бази даних та веб-додатка разом:
+
+1.  Створіть файл конфігурації `.env` на основі `.env.example`:
+    ```bash
+    cp .env.example .env
+    ```
+2.  Запустіть Docker Compose:
+    ```bash
+    docker compose up --build
+    ```
+3.  Застосунок автоматично ініціалізує базу даних, створить таблиці та буде доступний за адресою:
+    `http://127.0.0.1:8000`
+
+---
+
+### Варіант 2: Локальний запуск (для розробки)
+
+1.  Створіть та активуйте віртуальне оточення:
+    ```bash
+    python -m venv .venv
+    # Для Linux/macOS
+    source .venv/bin/activate
+    # Для Windows PowerShell
+    .\.venv\Scripts\Activate.ps1
+    ```
+2.  Встановіть залежності:
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  Налаштуйте файл `.env`. Якщо ви хочете запустити проект локально з полегшеною базою SQLite для швидкого тесту, просто змініть у файлі `.env`:
+    ```env
+    DATABASE_URL=sqlite:///./test.db
+    ```
+4.  Запустіть сервер uvicorn:
+    ```bash
+    uvicorn app.main:app --reload
+    ```
+
+---
+
+## 🧪 Тестування
+
+Для перевірки всіх аспектів ТЗ (signup, login, JWT scopes, CORS, slowapi rate limiting) було розроблено повний пакет інтеграційних тестів:
+
+Запуск тестів:
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+python -m unittest test_api.py
 ```
 
-Для Windows PowerShell:
+---
 
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-```
+## 🗺️ Список основних маршрутів (API Endpoints)
 
-2. Встановіть залежності:
+### 🔐 Аутентифікація (`/auth`)
+*   `POST /auth/signup` — Реєстрація нового користувача (повертає `201 Created`).
+*   `POST /auth/login` — Вхід користувача з поверненням access_token (JSON).
+*   `POST /auth/token` — Вхід користувача (для підтримки Swagger UI авторизації).
+*   `GET /auth/verify/{token}` — Ендпоінт підтвердження email.
 
-```bash
-pip install -r requirements.txt
-```
+### 👤 Користувачі (`/users`)
+*   `GET /users/me` — Отримання профілю поточного авторизованого користувача (**Rate limited: 10/min**).
+*   `PATCH /users/avatar` — Завантаження та оновлення аватара в Cloudinary.
 
-3. Створіть `.env` на основі `.env.example`:
-
-```bash
-cp .env.example .env
-```
-
-4. Запустіть PostgreSQL:
-
-```bash
-docker compose up -d
-```
-
-5. Запустіть API:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-API буде доступне за адресою:
-
-- `http://127.0.0.1:8000`
-- Swagger UI: `http://127.0.0.1:8000/docs`
-- OpenAPI JSON: `http://127.0.0.1:8000/openapi.json`
-
-## Основні ендпоінти
-
-| Метод | URL | Опис |
-| --- | --- | --- |
-| `POST` | `/contacts/` | Створити контакт |
-| `GET` | `/contacts/` | Отримати всі контакти або виконати пошук |
-| `GET` | `/contacts/{contact_id}` | Отримати контакт за id |
-| `PUT` | `/contacts/{contact_id}` | Оновити контакт |
-| `DELETE` | `/contacts/{contact_id}` | Видалити контакт |
-| `GET` | `/contacts/birthdays/upcoming` | Контакти з днями народження у найближчі 7 днів |
-
-## Пошук
-
-Пошук виконується через query-параметри:
-
-```text
-GET /contacts/?first_name=olen
-GET /contacts/?last_name=shev
-GET /contacts/?email=example.com
-```
-
-Параметри можна комбінувати:
-
-```text
-GET /contacts/?first_name=olen&email=gmail
-```
-
-## Приклад створення контакту
-
-```json
-{
-  "first_name": "Olena",
-  "last_name": "Shevchenko",
-  "email": "olena@example.com",
-  "phone": "+380501234567",
-  "birthday": "1995-05-17",
-  "additional_data": "Friend from university"
-}
-```
-
+### 📞 Контакти (`/contacts`) — *Усі маршрути потребують JWT-авторизації*
+*   `POST /contacts/` — Створення нового контакту (повертає `201 Created`).
+*   `GET /contacts/` — Список усіх контактів поточного користувача (з підтримкою пошуку через `first_name`, `last_name`, `email`).
+*   `GET /contacts/{contact_id}` — Отримання контакту за ID.
+*   `PUT /contacts/{contact_id}` — Оновлення контакту.
+*   `DELETE /contacts/{contact_id}` — Видалення контакту.
+*   `GET /contacts/birthdays/upcoming` — Контакти з найближчим днем народження у наступні 7 днів.

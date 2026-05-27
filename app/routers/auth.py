@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app import crud
 from app.auth import create_access_token, verify_password, get_email_from_verification_token
 from app.database import get_db
-from app.schemas import UserCreate, UserResponse, Token
+from app.schemas import UserCreate, UserLogin, UserResponse, Token
 from app.email import send_verification_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -36,7 +36,7 @@ async def signup(
 
 @router.post("/login", response_model=Token)
 def login(
-    user_data: UserCreate,  # Accepts JSON input with email/password
+    user_data: UserLogin,  # Accepts separate JSON login schema
     db: Session = Depends(get_db),
 ) -> dict[str, str]:
     user = crud.get_user_by_email(db, user_data.email)

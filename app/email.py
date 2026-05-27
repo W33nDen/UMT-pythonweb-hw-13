@@ -43,14 +43,14 @@ async def send_verification_email(email: EmailStr, host: str):
 
     # Fallback/Debug mode check
     is_placeholder = (
-        not settings.mail_server
-        or "smtp.mailtrap.io" in settings.mail_server
-        or "example.com" in settings.mail_username
-        or "user@example" in settings.mail_username
+        not settings.mail_username
+        or settings.mail_username == "user@example.com"
+        or settings.mail_password == "secret_password"
+        or not settings.mail_server
     )
 
     if is_placeholder or conf is None:
-        logger.info("Using console fallback for verification email.")
+        logger.info("Using console fallback for verification email (placeholder/missing SMTP credentials).")
         return
 
     try:

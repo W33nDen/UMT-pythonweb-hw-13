@@ -13,6 +13,8 @@ class User(Base):
     password: Mapped[str] = mapped_column(String(255), nullable=False)
     avatar: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_verified: Mapped[bool] = mapped_column(default=False)
+    role: Mapped[str] = mapped_column(String(20), default="user", nullable=False)
+    refresh_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
 
     contacts: Mapped[list["Contact"]] = relationship("Contact", back_populates="user", cascade="all, delete-orphan")

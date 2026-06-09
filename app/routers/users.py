@@ -7,7 +7,7 @@ from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from app import crud
-from app.auth import get_current_user
+from app.auth import get_current_user, RoleChecker
 from app.config import get_settings
 from app.database import get_db
 from app.models import User
@@ -41,7 +41,7 @@ def get_current_profile(
 ) -> UserResponse:
     """
     Get the profile of the currently logged-in user.
-    Rate-limited to 5 requests per minute.
+    Rate-limited to 10 requests per minute.
     """
     return current_user
 
@@ -49,7 +49,7 @@ def get_current_profile(
 @router.patch("/avatar", response_model=UserResponse)
 def update_avatar(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(RoleChecker(["admin"])),
     db: Session = Depends(get_db),
 ) -> UserResponse:
     """

@@ -47,16 +47,28 @@ class UserResponse(BaseModel):
     email: EmailStr
     avatar: str | None
     is_verified: bool
+    role: str
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class Token(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
 
 
 class RequestEmail(BaseModel):
     email: EmailStr
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(min_length=6, examples=["newsecretpassword"])
+
 
 

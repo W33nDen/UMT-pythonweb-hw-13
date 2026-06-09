@@ -9,4 +9,9 @@ venv/
 .ruff_cache/
 .idea/
 .vscode/
+docs/_build/
+.coverage
+test_api_api.db
+*.db
+
 
